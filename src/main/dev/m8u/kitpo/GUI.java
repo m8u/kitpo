@@ -5,7 +5,9 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Vector;
 
@@ -28,12 +30,12 @@ public class GUI extends JFrame {
     }
 
     public void replaceSelectionTabWithDemo(String demoKeyTypeName, String demoValueTypeName) {
-        tabbedPane.removeTabAt(tabbedPane.getTabCount()-1);
-        tabbedPane.addTab(demoKeyTypeName+"_"+demoValueTypeName+"_"+(tabbedPane.getTabCount()+1), new DemoPanel(demoKeyTypeName, demoValueTypeName, this));
+        tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
+        tabbedPane.addTab(demoKeyTypeName + "_" + demoValueTypeName + "_" + (tabbedPane.getTabCount() + 1), new DemoPanel(demoKeyTypeName, demoValueTypeName, this));
     }
 
     public void replaceSelectionTabWithDemo(File file) throws Exception {
-        tabbedPane.removeTabAt(tabbedPane.getTabCount()-1);
+        tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
         tabbedPane.addTab(file.getName(), new DemoPanel(file, this));
     }
 }
@@ -69,10 +71,10 @@ class DemoTypeSelectionPanel extends JPanel {
 
         JButton createButton = new JButton("Create");
         createButton.addActionListener(e -> {
-           parent.replaceSelectionTabWithDemo(keyTypesCombobox.getSelectedItem().toString(),
-                   valueTypesCombobox.getSelectedItem().toString());
-           parent.addSelectionTab();
-           parent.tabbedPane.setSelectedIndex(parent.tabbedPane.getTabCount()-2);
+            parent.replaceSelectionTabWithDemo(keyTypesCombobox.getSelectedItem().toString(),
+                    valueTypesCombobox.getSelectedItem().toString());
+            parent.addSelectionTab();
+            parent.tabbedPane.setSelectedIndex(parent.tabbedPane.getTabCount() - 2);
         });
         constraints.gridy = 2;
         constraints.gridx = 0;
@@ -93,7 +95,7 @@ class DemoTypeSelectionPanel extends JPanel {
                     return;
                 }
                 parent.addSelectionTab();
-                parent.tabbedPane.setSelectedIndex(parent.tabbedPane.getTabCount()-2);
+                parent.tabbedPane.setSelectedIndex(parent.tabbedPane.getTabCount() - 2);
             }
         });
         constraints.gridy = 3;
@@ -146,7 +148,7 @@ class DemoPanel extends JPanel {
         saveButton.addActionListener(e -> {
             JFileChooser chooser = new JFileChooser();
             chooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
-            chooser.setSelectedFile(new File(parent.tabbedPane.getTitleAt(parent.tabbedPane.getSelectedIndex())+".json"));
+            chooser.setSelectedFile(new File(parent.tabbedPane.getTitleAt(parent.tabbedPane.getSelectedIndex()) + ".json"));
             int result = chooser.showSaveDialog(this);
             try {
                 if (result == JFileChooser.APPROVE_OPTION) {
@@ -243,7 +245,7 @@ class DemoPanel extends JPanel {
         for (chain<Object, Object> chain : this.hashtable) {
             row = 0;
             for (chainNode<Object, Object> entry : chain) {
-                this.tableModel.setValueAt(entry.key+"->"+entry.value, row++, col);
+                this.tableModel.setValueAt(entry.key + "->" + entry.value, row++, col);
             }
             columnIdentifiers.add(String.valueOf(col));
             col++;

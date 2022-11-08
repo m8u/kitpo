@@ -5,13 +5,13 @@ import java.util.Arrays;
 
 public class TypeFactory {
 
-     public static ArrayList<String> getTypeNames() {
+    public static ArrayList<String> getTypeNames() {
         return new ArrayList<>(Arrays.asList(
                 "String", "Double", "Datetime"
         ));
     }
 
-     public static ChainedHashtableStorableBuilder getBuilderByName(String name) {
+    public static ChainedHashtableStorableBuilder getBuilderByName(String name) {
         return switch (name) {
             case "String" -> s -> s;
             case "Double" -> Double::parseDouble;

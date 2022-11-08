@@ -3,10 +3,11 @@ package src.main.dev.m8u.kitpo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.Spliterator;
 import java.util.Vector;
 import java.util.function.Consumer;
 
@@ -139,7 +140,8 @@ class chain<K, T> implements Iterable<chainNode<K, T>> {
 
     chainNode<K, T> head;
 
-    chain() {}
+    chain() {
+    }
 
     void set(K key, T value, expandable hashmap) {
         if (this.head == null) {

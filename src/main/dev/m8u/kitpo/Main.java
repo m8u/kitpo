@@ -50,7 +50,7 @@ public class Main {
         if (!hashtable.toString().equals("[, , {five:2018-07-02 09:40:56}{six:2017-06-01 08:39:55}{nine:2014-03-29 05:36:52}, , " +
                 "{two:2013-02-28 04:35:51}, {seven:2016-05-31 07:38:54}, {three:2020-09-04 11:42:58}{four:2019-08-03 10:41:57}, {eight:2015-04-30 06:37:53}]")
                 || !hashtable.get(keyBuilder.parseValue("five")).toString()
-                    .equals(new Datetime(2018, 7, 2, 9, 40, 56).toString())) {
+                .equals(new Datetime(2018, 7, 2, 9, 40, 56).toString())) {
             System.out.println("testDatetime failed");
         } else {
             System.out.println("testDatetime successful");
