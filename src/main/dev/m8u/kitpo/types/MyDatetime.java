@@ -1,6 +1,6 @@
-package src.main.dev.m8u.kitpo;
+package src.main.dev.m8u.kitpo.types;
 
-public class Datetime {
+public class MyDatetime {
     private static final int GREGORIAN_CALENDAR_SWITCH_YEAR = 1582;
 
     private int year;
@@ -10,7 +10,7 @@ public class Datetime {
     private int minute;
     private int second;
 
-    public Datetime(int year, int month, int day, int hour, int minute, int second) throws Exception {
+    public MyDatetime(int year, int month, int day, int hour, int minute, int second) throws Exception {
         setYear(year);
         setMonth(month);
         setDay(day);
@@ -76,23 +76,24 @@ public class Datetime {
         } else return this.month != 2 || this.day <= 28;
     }
 
-    public static Datetime parseValue(String s) throws Exception {
-        String[] minusSplit = s.split("-");
-        int year = Integer.parseInt(minusSplit[0]);
-        int month = Integer.parseInt(minusSplit[1]);
-        String[] whitespaceSplit = minusSplit[2].split(" ");
-        int day = Integer.parseInt(whitespaceSplit[0]);
-        String[] colonSplit = whitespaceSplit[1].split(":");
-        int hour = Integer.parseInt(colonSplit[0]);
-        int minute = Integer.parseInt(colonSplit[1]);
-        int second = Integer.parseInt(colonSplit[2]);
-
-        return new Datetime(year, month, day, hour, minute, second);
-    }
-
     @Override
     public String toString() {
         return String.format("%04d-%02d-%02d %02d:%02d:%02d",
                 this.year, this.month, this.day, this.hour, this.minute, this.second);
     }
+
+    @Override
+    public boolean equals(Object other) {
+        Class<?> otherClass = other.getClass();
+        if (otherClass.equals(MyDatetime.class)) {
+            return this.toString().equals(other.toString());
+        }
+        throw new RuntimeException("MyDatetime.equals() is not defined for class "+otherClass.getName());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.toString().hashCode();
+    }
 }
+

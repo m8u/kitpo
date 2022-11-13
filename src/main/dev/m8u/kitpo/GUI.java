@@ -1,5 +1,7 @@
 package src.main.dev.m8u.kitpo;
 
+import src.main.dev.m8u.kitpo.builders.MyHashableBuilder;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -29,9 +31,9 @@ public class GUI extends JFrame {
         tabbedPane.addTab("New...", new DemoTypeSelectionPanel(this));
     }
 
-    public void replaceSelectionTabWithDemo(String demoKeyTypeName, String demoValueTypeName) {
+    public void replaceSelectionTabWithDemo(String demoKeyTypeName) {
         tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
-        tabbedPane.addTab(demoKeyTypeName + "_" + demoValueTypeName + "_" + (tabbedPane.getTabCount() + 1), new DemoPanel(demoKeyTypeName, demoValueTypeName, this));
+        tabbedPane.addTab(demoKeyTypeName + "_" + (tabbedPane.getTabCount() + 1), new DemoPanel(demoKeyTypeName, this));
     }
 
     public void replaceSelectionTabWithDemo(File file) throws Exception {
@@ -59,20 +61,9 @@ class DemoTypeSelectionPanel extends JPanel {
         constraints.gridy = 1;
         this.add(keyTypesCombobox, constraints);
 
-        JComboBox<String> valueTypesCombobox = new JComboBox<>();
-        for (String typeName : typeNames) {
-            valueTypesCombobox.addItem(typeName);
-        }
-        constraints.gridy = 0;
-        constraints.gridx = 1;
-        this.add(new JLabel("Value type:"), constraints);
-        constraints.gridy = 1;
-        this.add(valueTypesCombobox, constraints);
-
         JButton createButton = new JButton("Create");
         createButton.addActionListener(e -> {
-            parent.replaceSelectionTabWithDemo(keyTypesCombobox.getSelectedItem().toString(),
-                    valueTypesCombobox.getSelectedItem().toString());
+            parent.replaceSelectionTabWithDemo(keyTypesCombobox.getSelectedItem().toString());
             parent.addSelectionTab();
             parent.tabbedPane.setSelectedIndex(parent.tabbedPane.getTabCount() - 2);
         });
@@ -107,18 +98,16 @@ class DemoTypeSelectionPanel extends JPanel {
 
 class DemoPanel extends JPanel {
 
-    ChainedHashtable<Object, Object> hashtable;
-    ChainedHashtableStorableBuilder keyBuilder;
-    ChainedHashtableStorableBuilder valueBuilder;
+    ChainedHashtable hashtable;
+    MyHashableBuilder keyBuilder;
     DefaultTableModel tableModel;
 
-    public DemoPanel(String keyTypeName, String valueTypeName, GUI parent) {
+    public DemoPanel(String keyTypeName, GUI parent) {
         super();
 
         initGUI(parent);
         keyBuilder = TypeFactory.getBuilderByName(keyTypeName);
-        valueBuilder = TypeFactory.getBuilderByName(valueTypeName);
-        hashtable = new ChainedHashtable<>(keyTypeName, valueTypeName);
+        hashtable = new ChainedHashtable(keyTypeName);
         refillTable();
     }
 
@@ -128,7 +117,6 @@ class DemoPanel extends JPanel {
         initGUI(parent);
         this.hashtable = ChainedHashtable.loadFromJSON(new FileInputStream(file));
         keyBuilder = TypeFactory.getBuilderByName(this.hashtable.getKeyTypeName());
-        valueBuilder = TypeFactory.getBuilderByName(this.hashtable.getValueTypeName());
         refillTable();
     }
 
@@ -206,8 +194,7 @@ class DemoPanel extends JPanel {
         JButton setButton = new JButton("Set");
         setButton.addActionListener(e -> {
             try {
-                this.hashtable.set(this.keyBuilder.parseValue(keyTextField.getText()),
-                        this.valueBuilder.parseValue(valueTextField.getText()));
+                this.hashtable.set(this.keyBuilder.parse(keyTextField.getText()), valueTextField.getText());
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex);
             }
@@ -215,13 +202,22 @@ class DemoPanel extends JPanel {
         });
         JButton getButton = new JButton("Get");
         getButton.addActionListener(e -> {
-            Object value = this.hashtable.get(keyTextField.getText());
+            Object value = null;
+            try {
+                value = this.hashtable.get(keyBuilder.parse(keyTextField.getText()));
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex);
+            }
             if (value != null)
                 valueTextField.setText(value.toString());
         });
         JButton removeButton = new JButton("Remove");
         removeButton.addActionListener(e -> {
-            this.hashtable.remove(keyTextField.getText());
+            try {
+                this.hashtable.remove(keyBuilder.parse(keyTextField.getText()));
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex);
+            }
             refillTable();
         });
         buttonsPanel.add(setButton);
@@ -242,9 +238,9 @@ class DemoPanel extends JPanel {
         this.tableModel.setRowCount(chain.CHAIN_MAX_LENGTH);
         int row, col = 0;
         Vector<String> columnIdentifiers = new Vector<>();
-        for (chain<Object, Object> chain : this.hashtable) {
+        for (chain chain : this.hashtable) {
             row = 0;
-            for (chainNode<Object, Object> entry : chain) {
+            for (chainNode entry : chain) {
                 this.tableModel.setValueAt(entry.key + "->" + entry.value, row++, col);
             }
             columnIdentifiers.add(String.valueOf(col));

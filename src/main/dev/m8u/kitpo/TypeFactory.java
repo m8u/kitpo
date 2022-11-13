@@ -1,22 +1,32 @@
 package src.main.dev.m8u.kitpo;
 
+import src.main.dev.m8u.kitpo.builders.MyDatetimeBuilder;
+import src.main.dev.m8u.kitpo.builders.MyDoubleBuilder;
+import src.main.dev.m8u.kitpo.builders.MyHashableBuilder;
+
 import java.util.ArrayList;
-import java.util.Arrays;
+
+
+enum MyHashmapStorable {
+    MyDouble, MyDatetime
+}
 
 public class TypeFactory {
 
     public static ArrayList<String> getTypeNames() {
-        return new ArrayList<>(Arrays.asList(
-                "String", "Double", "Datetime"
-        ));
+        ArrayList<String> list = new ArrayList<>();
+        for (MyHashmapStorable type : MyHashmapStorable.values()) {
+            list.add(String.valueOf(type));
+        }
+        return list;
     }
 
-    public static ChainedHashtableStorableBuilder getBuilderByName(String name) {
-        return switch (name) {
-            case "String" -> s -> s;
-            case "Double" -> Double::parseDouble;
-            case "Datetime" -> Datetime::parseValue;
-            default -> null;
-        };
+    public static MyHashableBuilder getBuilderByName(String name) {
+        if ("MyDouble".equals(name)) {
+            return new MyDoubleBuilder();
+        } else if ("MyDatetime".equals(name)) {
+            return new MyDatetimeBuilder();
+        }
+        return null;
     }
 }
