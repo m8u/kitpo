@@ -13,47 +13,48 @@ import java.util.Vector;
 import java.util.function.Consumer;
 
 
-public class ChainedHashtable implements Iterable<chain> {
+public class ChainedHashtable implements Iterable<ChainedHashtable.Chain> {
 
-    private static final int INITIAL_SIZE = 4;
+    public static final int INITIAL_SIZE = 4;
 
     private final String keyTypeName;
 
-    private Vector<chain> map;
+    private Vector<Chain> map;
 
     public ChainedHashtable(String keyTypeName) {
         this.keyTypeName = keyTypeName;
         map = new Vector<>();
         map.setSize(INITIAL_SIZE);
         for (int i = 0; i < INITIAL_SIZE; i++) {
-            map.set(i, new chain());
+            map.set(i, new Chain());
         }
     }
 
-    public void set(Object key, Object value) {
-        int index = Math.abs(key.hashCode()) % map.size();
-        this.map.get(index).set(key, value, this::expand);
+    public boolean set(Object key, Object value) {
+        return this.map.get(calcIndex(key)).set(key, value, this::expand);
     }
 
     public Object get(Object key) {
-        int index = key.hashCode() % map.size();
-        return this.map.get(index).get(key);
+        return this.map.get(calcIndex(key)).get(key);
     }
 
     public Object remove(Object key) {
-        int index = key.hashCode() % map.size();
-        return this.map.get(index).remove(key);
+        return this.map.get(calcIndex(key)).remove(key);
+    }
+
+    private int calcIndex(Object key) {
+        return Math.abs(key.hashCode() % map.size());
     }
 
     void expand() {
-        Vector<chain> old = this.map;
+        Vector<Chain> old = this.map;
         this.map = new Vector<>();
         this.map.setSize(old.size() * 2);
         for (int i = 0; i < this.map.size(); i++) {
-            map.set(i, new chain());
+            map.set(i, new Chain());
         }
-        for (chain chain : old) {
-            for (chainNode entry : chain) {
+        for (Chain chain : old) {
+            for (ChainNode entry : chain) {
                 this.set(entry.key, entry.value);
             }
         }
@@ -69,7 +70,7 @@ public class ChainedHashtable implements Iterable<chain> {
     }
 
     @Override
-    public Iterator<chain> iterator() {
+    public Iterator<Chain> iterator() {
         return new Iterator<>() {
             int i = 0;
 
@@ -79,27 +80,27 @@ public class ChainedHashtable implements Iterable<chain> {
             }
 
             @Override
-            public chain next() {
+            public Chain next() {
                 return map.get(i++);
             }
         };
     }
 
     @Override
-    public void forEach(Consumer<? super chain> action) {
+    public void forEach(Consumer<? super Chain> action) {
         Iterable.super.forEach(action);
     }
 
-    void saveAsJSON(FileOutputStream fos) throws IOException {
+    public void saveAsJSON(FileOutputStream fos) throws IOException {
         String json = "{\"keyType\": \"%s\",\"hashtable\": %s}";
         JSONObject jsonHashtable = new JSONObject();
         jsonHashtable.put("size", this.getCapacity());
         JSONArray jsonHashtableData = new JSONArray();
-        for (chain chain : this) {
+        for (Chain chain : this) {
             JSONObject jsonChain = new JSONObject();
             JSONArray jsonChainData = new JSONArray();
             int nodeCount = 0;
-            for (chainNode node : chain) {
+            for (ChainNode node : chain) {
                 JSONObject jsonNode = new JSONObject();
                 jsonNode.put("key", node.key.toString());
                 jsonNode.put("value", node.value.toString());
@@ -115,7 +116,7 @@ public class ChainedHashtable implements Iterable<chain> {
         fos.write(json.getBytes());
     }
 
-    static ChainedHashtable loadFromJSON(FileInputStream fis) throws Exception {
+    public static ChainedHashtable loadFromJSON(FileInputStream fis) throws Exception {
         byte[] bytes = fis.readAllBytes();
         String json = new String(bytes, StandardCharsets.UTF_8);
         JSONObject jsonObject = new JSONObject(json);
@@ -145,9 +146,9 @@ public class ChainedHashtable implements Iterable<chain> {
     public double getAverageChainLength() {
         double avgChainLength = 0;
         int length;
-        for (chain c : this) {
+        for (Chain c : this) {
             length = 0;
-            for (chainNode ignored : c) length++;
+            for (ChainNode ignored : c) length++;
             avgChainLength += length;
         }
         avgChainLength /= this.getCapacity();
@@ -156,125 +157,131 @@ public class ChainedHashtable implements Iterable<chain> {
 
     public double getOccupancy() {
         double nonEmptyCount = 0;
-        for (chain c : this)
-            for (chainNode ignored : c) {
+        for (Chain c : this)
+            for (ChainNode ignored : c) {
                 nonEmptyCount++;
                 break;
             }
         return nonEmptyCount / this.getCapacity();
     }
-}
 
-class chain implements Iterable<chainNode> {
+    public class Chain implements Iterable<ChainNode> {
 
-    public static final int CHAIN_MAX_LENGTH = 5;
+        public static final int CHAIN_MAX_LENGTH = 5;
 
-    chainNode head;
+        ChainNode head;
 
-    chain() {
-    }
-
-    void set(Object key, Object value, expandable hashmap) {
-        if (this.head == null) {
-            this.head = new chainNode(key, value);
-            return;
+        Chain() {
         }
-        if (this.head.key.equals(key)) {
-            this.head.value = value;
-            return;
-        }
-        chainNode node = this.head;
-        int len = 2;
-        while (node.next != null) {
-            if (node.next.key.equals(key)) {
-                node.next.value = value;
-                return;
+
+        boolean set(Object key, Object value, expandable hashmap) {
+            if (this.head == null) {
+                this.head = new ChainNode(key, value);
+                return false;
             }
-            node = node.next;
-            len++;
-        }
-        node.next = new chainNode(key, value);
-
-        if (len > CHAIN_MAX_LENGTH) {
-            hashmap.expand();
-        }
-    }
-
-    Object get(Object key) {
-        chainNode node = this.head;
-        while (node != null) {
-            if (node.key.equals(key)) {
-                return node.value;
+            if (this.head.key.equals(key)) {
+                this.head.value = value;
+                return false;
             }
-            node = node.next;
-        }
-        return null;
-    }
-
-    Object remove(Object key) {
-        chainNode node = this.head, prev = null;
-        while (node != null) {
-            if (node.key.equals(key)) {
-                break;
+            ChainNode node = this.head;
+            int len = 2;
+            while (node.next != null) {
+                if (node.next.key.equals(key)) {
+                    node.next.value = value;
+                    return false;
+                }
+                node = node.next;
+                len++;
             }
-            prev = node;
-            node = node.next;
+            node.next = new ChainNode(key, value);
+
+            if (len > CHAIN_MAX_LENGTH) {
+                hashmap.expand();
+                return true;
+            }
+            return false;
         }
-        if (node == null) {
+
+        Object get(Object key) {
+            ChainNode node = this.head;
+            while (node != null) {
+                if (node.key.equals(key)) {
+                    return node.value;
+                }
+                node = node.next;
+            }
             return null;
         }
-        if (prev == null) {
-            this.head = this.head.next;
-        } else {
-            prev.next = node.next;
-        }
-        return node.value;
-    }
 
-    @Override
-    public String toString() {
-        StringBuilder str = new StringBuilder();
-        chainNode node = this.head;
-        while (node != null && node.key != null) {
-            str.append("{" + node.key + ":" + node.value + "}");
-            node = node.next;
-        }
-        return str.toString();
-    }
-
-    @Override
-    public Iterator<chainNode> iterator() {
-        return new Iterator<>() {
-            chainNode current = head;
-
-            @Override
-            public boolean hasNext() {
-                return current != null;
+        Object remove(Object key) {
+            ChainNode node = this.head, prev = null;
+            while (node != null) {
+                if (node.key.equals(key)) {
+                    break;
+                }
+                prev = node;
+                node = node.next;
             }
-
-            @Override
-            public chainNode next() {
-                chainNode currentRef = current;
-                current = current.next;
-                return currentRef;
+            if (node == null) {
+                return null;
             }
-        };
+            if (prev == null) {
+                this.head = this.head.next;
+            } else {
+                prev.next = node.next;
+            }
+            return node.value;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder str = new StringBuilder();
+            ChainNode node = this.head;
+            while (node != null && node.key != null) {
+                str.append("{" + node.key + ":" + node.value + "}");
+                node = node.next;
+            }
+            return str.toString();
+        }
+
+        @Override
+        public Iterator<ChainNode> iterator() {
+            return new Iterator<>() {
+                ChainNode current = head;
+
+                @Override
+                public boolean hasNext() {
+                    return current != null;
+                }
+
+                @Override
+                public ChainNode next() {
+                    ChainNode currentRef = current;
+                    current = current.next;
+                    return currentRef;
+                }
+            };
+        }
+
+        @Override
+        public void forEach(Consumer<? super ChainNode> action) {
+            Iterable.super.forEach(action);
+        }
     }
 
-    @Override
-    public void forEach(Consumer<? super chainNode> action) {
-        Iterable.super.forEach(action);
-    }
-}
+    public class ChainNode {
+        Object key;
+        Object value;
+        ChainNode next;
 
-class chainNode {
-    Object key;
-    Object value;
-    chainNode next;
+        ChainNode(Object key, Object value) {
+            this.key = key;
+            this.value = value;
+        }
 
-    chainNode(Object key, Object value) {
-        this.key = key;
-        this.value = value;
+        public Object getKey() {
+            return key;
+        }
     }
 }
 

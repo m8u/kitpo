@@ -235,12 +235,12 @@ class DemoPanel extends JPanel {
             this.tableModel.removeRow(r);
         }
         this.tableModel.setColumnCount(this.hashtable.getCapacity());
-        this.tableModel.setRowCount(chain.CHAIN_MAX_LENGTH);
+        this.tableModel.setRowCount(ChainedHashtable.Chain.CHAIN_MAX_LENGTH);
         int row, col = 0;
         Vector<String> columnIdentifiers = new Vector<>();
-        for (chain chain : this.hashtable) {
+        for (ChainedHashtable.Chain chain : this.hashtable) {
             row = 0;
-            for (chainNode entry : chain) {
+            for (ChainedHashtable.ChainNode entry : chain) {
                 this.tableModel.setValueAt(entry.key + "->" + entry.value, row++, col);
             }
             columnIdentifiers.add(String.valueOf(col));
